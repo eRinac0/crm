@@ -3,7 +3,9 @@ from pydantic import BaseModel, EmailStr
 class ClientBase(BaseModel):
     name: str
     email: EmailStr
-    phone: int
+    phone: str
+    company: str
+    notes: str
 
 
 class ClientCreate(ClientBase):

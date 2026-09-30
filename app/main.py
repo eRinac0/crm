@@ -1,69 +1,84 @@
-import uvicorn
-from fastapi import FastAPI
-from .schemas import ClientCreate, ClientRead, ClientBase
-from app.database import Base, engine, SessionLocal
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+
+from app.database import get_db, Base, engine
 from app.models import Client
+from app.schemas import ClientCreate, ClientBase, ClientRead
+
+
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
-clients = [
-    {
-        "id": 1,
-        "name": "Alex",
-        "email": "alex@example.com"
-    }
-]
+@app.get("/clients", response_model=list[ClientRead])
+def get_clients(db: Session = Depends(get_db)):
+    result = db.execute(
+        select(Client)
+    )
 
+    return result.scalars().all()
 
-db = SessionLocal()
-
-
-@app.get("/")
-def read_root():
-    return {"message": "ClientFlow API"}    
-
-
-@app.get("/health")
-def read_item():
-    return {"status": "ok"}
-
-
-@app.get("/clients")
-def get_clients():
-    return clients
-
-@app.get("/clients/{client_id}", response_model=ClientRead)
-def get_client(client_id: int):
-    client = next((c for c in clients if c["id"] == client_id), None)
-    if client is None:
-        return {"error": "Client not found"}
-    return client
 
 @app.post("/clients", response_model=ClientRead)
-def create_client(client: ClientBase):
-    clients.append(client.dict())
+def create_client(
+    client_data: ClientCreate,
+    db: Session = Depends(get_db)
+):
+    client = Client(
+        name=client_data.name,
+        email=client_data.email,
+        phone=client_data.phone,
+        company=client_data.company,
+        notes=client_data.notes
+    )
+
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+
     return client
 
-@app.put("/clients/{client_id}", response_model=ClientRead)
-def update_client(client_id: int, client: ClientBase):
-    for c in clients:
-        if c["id"] == client_id:
-            c.update(client.dict())
-            return c
-    return {"error": "Client not found"}
+
+@app.put("/clients/{client_id}")
+def update_client(
+    client_id: int,
+    client_data: ClientBase,
+    db: Session = Depends(get_db)
+):
+    client = db.get(Client, client_id)
+
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail="Client not found"
+        )
+
+    client.name = client_data.name
+    client.email = client_data.email
+    client.phone = client_data.phone
+    client.company = client_data.company
+    client.notes = client_data.notes
+
+    db.commit()
+    db.refresh(client)
+
+    return client
+
 
 @app.delete("/clients/{client_id}")
-def delete_client(client_id: int):
-    global clients
-    clients = [c for c in clients if c["id"] != client_id]
-    return {"message": "Client deleted"}
+def delete_client(
+    client_id: int,
+    db: Session = Depends(get_db)
+):
+    client = db.get(Client, client_id)
 
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail="Client not found"
+        )
 
-@app.get("/clients", response_model=list[ClientRead])
-async def search_clients(name: str = None, email: str = None):
-    results = clients
-    if name:
-        results = [c for c in results if name.lower() in c["name"].lower()]
-    if email:
-        results = [c for c in results if email.lower() in c["email"].lower()]
-    return results
+    db.delete(client)
+    db.commit()
+
+    return {"message": "Client deleted successfully"}
