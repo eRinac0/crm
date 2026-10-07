@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.database import get_db, Base, engine
-from app.models import Client
-from app.schemas import ClientCreate, ClientBase, ClientRead
+from app.models import Client, User, Task
+from app.schemas import ClientCreate, ClientBase, ClientRead, UserCreate, UserRead
 
 
 app = FastAPI()
@@ -86,3 +86,20 @@ def delete_client(
     db.commit()
 
     return {"message": "Client deleted successfully"}
+
+
+@app.post("/users", response_model=UserRead)
+def create_user(
+    user_data: UserCreate,
+    db: Session = Depends(get_db)
+):
+    user = User(
+        name=user_data.name,
+        email=user_data.email
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return user

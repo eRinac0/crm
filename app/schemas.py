@@ -13,3 +13,12 @@ class ClientCreate(ClientBase):
 
 class ClientRead(ClientBase):
     id: int
+
+
+class UserCreate(BaseModel):
+    name: str
+    email: EmailStr
+
+class UserRead(UserCreate):
+    id: int
+    
