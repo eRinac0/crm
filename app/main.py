@@ -10,6 +10,10 @@ from app.schemas import ClientCreate, ClientBase, ClientRead
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the CRM API!"}
+
 @app.get("/clients", response_model=list[ClientRead])
 def get_clients(db: Session = Depends(get_db)):
     result = db.execute(
