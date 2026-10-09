@@ -22,3 +22,12 @@ class UserCreate(BaseModel):
 class UserRead(UserCreate):
     id: int
     
+class TaskCreate(BaseModel):
+    title: str
+    description: str
+    status: str
+    user_id: int
+    client_id: int
+
+class TaskRead(TaskCreate):
+    id: int

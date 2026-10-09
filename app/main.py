@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from app.database import get_db, Base, engine
 from app.models import Client, User, Task
-from app.schemas import ClientCreate, ClientBase, ClientRead, UserCreate, UserRead
+from app.schemas import ClientCreate, ClientBase, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead    
 
 
 app = FastAPI()
@@ -46,7 +46,7 @@ def create_client(
 @app.put("/clients/{client_id}")
 def update_client(
     client_id: int,
-    client_data: ClientBase,
+    client_data: ClientRead,
     db: Session = Depends(get_db)
 ):
     client = db.get(Client, client_id)
@@ -103,3 +103,36 @@ def create_user(
     db.refresh(user)
 
     return user
+
+@app.post("/tasks", response_model=TaskRead)
+def create_task(
+    task_data: TaskCreate,
+    db: Session = Depends(get_db)
+):
+    user = db.get(User, task_data.user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+    )
+    client = db.get(Client, task_data.client_id)
+
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail="Client not found"
+    )
+    task = Task(
+        title=task_data.title,
+        description=task_data.description,
+        status=task_data.status,
+        user_id=task_data.user_id,
+        client_id=task_data.client_id
+    )
+
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+
+    return task
