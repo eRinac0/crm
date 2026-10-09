@@ -136,3 +136,9 @@ def create_task(
     db.refresh(task)
 
     return task
+
+@app.get("/tasks", response_model=list[TaskRead])
+def get_tasks(db: Session = Depends(get_db)):
+    result = db.execute(select(Task))
+
+    return result.scalars().all()
