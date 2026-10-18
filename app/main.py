@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from app.database import get_db, Base, engine
 from app.models import Client, User, Task
-from app.schemas import ClientCreate, ClientBase, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead    
+from app.schemas import ClientCreate, ClientBase, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead, TaskUpdate    
 
 
 app = FastAPI()
@@ -157,3 +157,42 @@ def get_user_tasks(user_id: int,db: Session = Depends(get_db)):
     result = db.execute(select(Task).where(Task.user_id == user_id))
 
     return result.scalars().all()
+
+
+@app.get("/tasks/{task_id}", response_model=TaskRead)
+def get_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.get(Task, task_id)
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    return task
+
+
+@app.put("/tasks/{task_id}", response_model=TaskRead)
+def update_task(
+    task_id: int,
+    task_data: TaskUpdate,
+    db: Session = Depends(get_db)
+):
+    task = db.get(Task, task_id)
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    task.title = task_data.title
+    task.description = task_data.description
+    task.status = task_data.status
+    task.user_id = task_data.user_id
+    task.client_id = task_data.client_id
+
+    db.commit()
+    db.refresh(task)
+
+    return task

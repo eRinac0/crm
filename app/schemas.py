@@ -31,3 +31,10 @@ class TaskCreate(BaseModel):
 
 class TaskRead(TaskCreate):
     id: int
+
+class TaskUpdate(BaseModel):
+    title: str
+    description: str
+    status: str
+    user_id: int
+    client_id: int
