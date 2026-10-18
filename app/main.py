@@ -185,7 +185,23 @@ def update_task(
             status_code=404,
             detail="Task not found"
         )
+   
+    user = db.get(User, task_data.user_id)
 
+    if not user:
+        raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+    
+    
+    client = db.get(Client, task_data.client_id)
+
+    if not client:
+        raise HTTPException(
+                status_code=404,
+                detail="Client not found"
+            )
     task.title = task_data.title
     task.description = task_data.description
     task.status = task_data.status
@@ -196,3 +212,22 @@ def update_task(
     db.refresh(task)
 
     return task
+
+
+@app.delete("/tasks/{task_id}")
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db)
+):
+    task = db.get(Task, task_id)
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    db.delete(task)
+    db.commit()
+
+    return {"message": "Task deleted successfully"}
