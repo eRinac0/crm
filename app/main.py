@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query  
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -231,3 +231,20 @@ def delete_task(
     db.commit()
 
     return {"message": "Task deleted successfully"}
+
+@app.get("/task/filter", response_model=list[TaskRead])
+def filter_tasks(status: str | None = None, user_id: int | None = None, client_id: int | None = None, limit: int = Query(default=10, ge=1, le=100),offset: int = Query(default=0, ge=0), db: Session = Depends(get_db)):
+    query = select(Task)
+    if status is not None:
+        query = query.where(Task.status == status)
+
+    if user_id is not None:
+        query = query.where(Task.user_id == user_id)
+
+    if client_id is not None:
+        query = query.where(Task.client_id == client_id)
+
+    query = query.limit(limit).offset(offset)
+    result = db.execute(query)
+
+    return result.scalars().all()
