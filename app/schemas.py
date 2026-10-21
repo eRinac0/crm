@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from enum import Enum
 
 class ClientBase(BaseModel):
     name: str
@@ -21,20 +22,22 @@ class UserCreate(BaseModel):
 
 class UserRead(UserCreate):
     id: int
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
     
 class TaskCreate(BaseModel):
     title: str
     description: str
-    status: str
+    status: TaskStatus
     user_id: int
     client_id: int
 
 class TaskRead(TaskCreate):
     id: int
 
-class TaskUpdate(BaseModel):
-    title: str
-    description: str
-    status: str
-    user_id: int
-    client_id: int
+class TaskUpdate(TaskCreate):
+    pass
+

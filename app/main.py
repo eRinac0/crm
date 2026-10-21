@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from app.database import get_db, Base, engine
 from app.models import Client, User, Task
-from app.schemas import ClientCreate, ClientBase, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead, TaskUpdate    
+from app.schemas import ClientCreate, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead, TaskUpdate, TaskStatus
 
 
 app = FastAPI()
@@ -233,7 +233,7 @@ def delete_task(
     return {"message": "Task deleted successfully"}
 
 @app.get("/task/filter", response_model=list[TaskRead])
-def filter_tasks(status: str | None = None, user_id: int | None = None, client_id: int | None = None, limit: int = Query(default=10, ge=1, le=100),offset: int = Query(default=0, ge=0), db: Session = Depends(get_db)):
+def filter_tasks(status: TaskStatus | None = None, user_id: int | None = None, client_id: int | None = None, limit: int = Query(default=10, ge=1, le=100),offset: int = Query(default=0, ge=0), db: Session = Depends(get_db)):
     query = select(Task)
     if status is not None:
         query = query.where(Task.status == status)
@@ -244,7 +244,24 @@ def filter_tasks(status: str | None = None, user_id: int | None = None, client_i
     if client_id is not None:
         query = query.where(Task.client_id == client_id)
 
-    query = query.limit(limit).offset(offset)
+    query = query.order_by(Task.id).limit(limit).offset(offset)
     result = db.execute(query)
 
     return result.scalars().all()
+
+@app.get("/users", response_model=list[UserRead])
+def get_users(db: Session = Depends(get_db)):
+    result = db.execute(select(User))
+    return result.scalars().all()
+
+@app.get("/users/{user_id}", response_model=UserRead)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.get(User, user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    return user
