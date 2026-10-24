@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Query  
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.database import get_db, Base, engine
 from app.models import Client, User, Task
@@ -15,10 +15,32 @@ def read_root():
     return {"message": "Welcome to the CRM API!"}
 
 @app.get("/clients", response_model=list[ClientRead])
-def get_clients(db: Session = Depends(get_db)):
-    result = db.execute(
-        select(Client)
-    )
+def get_clients(
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    sort_by: str = "id",
+    order: str = "asc",
+    db: Session = Depends(get_db)
+):
+    query = select(Client)
+
+    if sort_by == "name":
+        column = Client.name
+    elif sort_by == "id":
+        column = Client.id
+    else:
+        raise HTTPException(status_code=400, detail="Invalid sort field")
+
+    if order == "desc":
+        query = query.order_by(column.desc())
+    elif order == "asc":
+        query = query.order_by(column.asc())
+    else:
+        raise HTTPException(status_code=400, detail="Invalid sort order")
+
+    query = query.limit(limit).offset(offset)
+
+    result = db.execute(query)
 
     return result.scalars().all()
 
@@ -265,3 +287,45 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         )
 
     return user
+
+
+@app.put("/users/{user_id}", response_model=UserRead)
+def update_user(user_id: int, user_data: UserCreate, db: Session = Depends(get_db)):
+        user = db.get(User, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user.name = user_data.name
+        user.email = user_data.email
+        db.commit()
+        db.refresh(user)
+        return user
+
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.get(User, user_id)
+    
+   
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.tasks:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot delete user with assigned tasks"
+            )
+    db.delete(user)
+    db.commit()
+    return {"message": "User deleted successfully"}
+
+
+@app.get("/clients/search", response_model=list[ClientRead])
+def search_clients(name: str|None = None,email: str|None = None, db: Session = Depends(get_db),limit: int = Query(default=10, ge=1, le=100),offset: int = Query(default=0, ge=0)):
+    query = select(Client)
+    if name:
+        query = query.where(func.lower(Client.name).contains(name.lower()))
+    if email:
+        query = query.where(func.lower(Client.email).contains(email.lower()))
+    query = query.order_by(Client.id).limit(limit).offset(offset)
+    result = db.execute(query)
+    return result.scalars().all()
