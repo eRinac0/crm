@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 
 from app.database import get_db, Base, engine
 from app.models import Client, User, Task
-from app.schemas import ClientCreate, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead, TaskUpdate, TaskStatus
+from app.schemas import ClientCreate, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead, TaskUpdate, TaskStatus, SortField, SortOrder
 
 
 app = FastAPI()
@@ -18,22 +18,22 @@ def read_root():
 def get_clients(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    sort_by: str = "id",
-    order: str = "asc",
+    sort_by: SortField = SortField.ID,
+    order: SortOrder = SortOrder.ASC,
     db: Session = Depends(get_db)
 ):
     query = select(Client)
 
-    if sort_by == "name":
+    if sort_by == SortField.NAME:
         column = Client.name
-    elif sort_by == "id":
+    elif sort_by == SortField.ID:
         column = Client.id
     else:
         raise HTTPException(status_code=400, detail="Invalid sort field")
 
-    if order == "desc":
+    if order == SortOrder.DESC:
         query = query.order_by(column.desc())
-    elif order == "asc":
+    elif order == SortOrder.ASC:
         query = query.order_by(column.asc())
     else:
         raise HTTPException(status_code=400, detail="Invalid sort order")

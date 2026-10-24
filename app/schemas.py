@@ -41,3 +41,13 @@ class TaskRead(TaskCreate):
 class TaskUpdate(TaskCreate):
     pass
 
+class SortField(str, Enum):
+    ID = "id"
+    TITLE = "title"
+    STATUS = "status"
+    USER_ID = "user_id"
+    CLIENT_ID = "client_id"
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
