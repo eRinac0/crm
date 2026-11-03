@@ -43,10 +43,7 @@ class TaskUpdate(TaskCreate):
 
 class SortField(str, Enum):
     ID = "id"
-    TITLE = "title"
-    STATUS = "status"
-    USER_ID = "user_id"
-    CLIENT_ID = "client_id"
+    NAME = "name"
 
 class SortOrder(str, Enum):
     ASC = "asc"
