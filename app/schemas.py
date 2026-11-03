@@ -51,3 +51,11 @@ class SortField(str, Enum):
 class SortOrder(str, Enum):
     ASC = "asc"
     DESC = "desc"
+
+class ClientListResponse(BaseModel):
+    items: list[ClientRead]
+    total: int
+    pages: int
+    limit: int
+    offset: int
+    has_next: bool

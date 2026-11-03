@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Depends, HTTPException, Query  
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
-
 from app.database import get_db, Base, engine
 from app.models import Client, User, Task
-from app.schemas import ClientCreate, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead, TaskUpdate, TaskStatus, SortField, SortOrder
+from app.schemas import ClientCreate, ClientRead, UserCreate, UserRead, TaskCreate, TaskRead, TaskUpdate, TaskStatus, SortField, SortOrder, ClientListResponse  
+import math
+
 
 
 app = FastAPI()
@@ -14,8 +15,10 @@ Base.metadata.create_all(bind=engine)
 def read_root():
     return {"message": "Welcome to the CRM API!"}
 
-@app.get("/clients", response_model=list[ClientRead])
+@app.get("/clients", response_model=ClientListResponse)
 def get_clients(
+    name: str | None = Query(default=None),
+    email: str | None = Query(default=None),
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     sort_by: SortField = SortField.ID,
@@ -23,6 +26,10 @@ def get_clients(
     db: Session = Depends(get_db)
 ):
     query = select(Client)
+    if name:
+        query = query.where(func.lower(Client.name).contains(name.lower()))
+    if email:
+        query = query.where(func.lower(Client.email).contains(email.lower()))
 
     if sort_by == SortField.NAME:
         column = Client.name
@@ -39,10 +46,26 @@ def get_clients(
         raise HTTPException(status_code=400, detail="Invalid sort order")
 
     query = query.limit(limit).offset(offset)
+    count_query = select(func.count()).select_from(Client)
 
+    if name:
+        count_query = count_query.where(func.lower(Client.name).contains(name.lower()))
+
+    if email:
+        count_query = count_query.where(func.lower(Client.email).contains(email.lower()))
+    total = db.execute(count_query).scalar()
+    pages = math.ceil(total / limit)
+    has_next = offset + limit < total
     result = db.execute(query)
 
-    return result.scalars().all()
+    return {
+    "items": result.scalars().all(),
+    "total": total,
+    "pages": pages,
+    "limit": limit,
+    "offset": offset,
+    "has_next": has_next
+}
 
 
 @app.post("/clients", response_model=ClientRead)
@@ -319,13 +342,3 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "User deleted successfully"}
 
 
-@app.get("/clients/search", response_model=list[ClientRead])
-def search_clients(name: str|None = None,email: str|None = None, db: Session = Depends(get_db),limit: int = Query(default=10, ge=1, le=100),offset: int = Query(default=0, ge=0)):
-    query = select(Client)
-    if name:
-        query = query.where(func.lower(Client.name).contains(name.lower()))
-    if email:
-        query = query.where(func.lower(Client.email).contains(email.lower()))
-    query = query.order_by(Client.id).limit(limit).offset(offset)
-    result = db.execute(query)
-    return result.scalars().all()
