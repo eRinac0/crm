@@ -1,8 +1,8 @@
 # CRM API
 
-Небольшой учебный CRM API на FastAPI, SQLAlchemy и SQLite.
+Little CRM API on FastAPI, SQLAlchemy и SQLite.
 
-## Запуск
+## Launch
 
 ```powershell
 py -m venv .venv
@@ -11,8 +11,8 @@ python -m pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Документация API доступна по адресу http://127.0.0.1:8000/docs. База `database.db` создаётся рядом с проектом.
+Domenys API - http://127.0.0.1:8000/docs. Base `database.db` create near the project
 
-## Демо-данные
 
-После установки зависимостей запустите `python seed_data.py`. Скрипт добавит недостающие записи до 20 пользователей, клиентов и задач; повторный запуск не дублирует демо-данные. Статусы задач: `pending`, `in_progress`, `completed`.
+
+After installing the dependencies, run `python seed_data.py`. The script will add any missing records for up to 20 users, clients, and tasks; running it again will not duplicate the demo data. Task statuses: `pending`, `in_progress`, `completed`.
