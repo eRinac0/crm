@@ -1,0 +1,7 @@
+fastapi==0.141.1
+SQLAlchemy==2.1.1
+email-validator==2.3.0
+uvicorn==0.54.0
+
+# Обновить список установленными пакетами активного окружения:
+# .\.venv\Scripts\python.exe -m pip freeze > requirements.txt
