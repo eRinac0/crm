@@ -2,5 +2,7 @@
 /app/__pycache__/
 /__pycache__/
 *.py[cod]
-/database.db
 ./tests/__pycache__/
+*.db
+*.db-shm
+*.db-wal
