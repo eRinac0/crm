@@ -25,7 +25,8 @@ class User(Base):
 
     email: Mapped[str] = mapped_column(String(255))
 
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    # Existing local accounts are upgraded with NULL hashes and must register anew.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     tasks: Mapped[list["Task"]] = relationship(
         back_populates="user"
